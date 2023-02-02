@@ -222,6 +222,51 @@ class CameraView : FrameLayout {
         } ?: onError("ImageCapture is null")
     }
 
+    fun capture(ratio: Float, onSuccess: (byteArray: ByteArray) -> Unit, onError: (error: String) -> Unit) {
+        if(status != Status.BINDING) {
+            onError("Camera Status is not available, status: $status")
+            return
+        }
+
+        imageCapture?.let { imageCapture ->
+            val metadata = ImageCapture.Metadata().apply {
+                isReversedHorizontal = lensFacing == CameraSelector.LENS_FACING_FRONT
+            }
+            val cameraViewCapture = CameraCaptureByRatio(
+                ratio,
+                onSuccess,
+                onError
+            )
+            val outputOptions = ImageCapture.OutputFileOptions.Builder(cameraViewCapture.outputStream)
+                .setMetadata(metadata)
+                .build()
+            imageCapture.targetRotation = cameraViewOrientation.orientationToTargetRotation()
+            imageCapture.flashMode = when(flash) {
+                CameraFlash.OFF -> ImageCapture.FLASH_MODE_OFF
+                CameraFlash.ON -> ImageCapture.FLASH_MODE_ON
+                CameraFlash.AUTO -> ImageCapture.FLASH_MODE_AUTO
+            }
+
+            imageCapture.takePicture(
+                outputOptions,
+                cameraExecutor,
+                cameraViewCapture)
+
+            captureView.animate().cancel()
+            captureView.visibility = View.VISIBLE
+            captureView.alpha = 0.0f
+            captureView.animate()
+                .alpha(0.25f)
+                .withLayer()
+                .setDuration(ANIMATION_MILLIS)
+                .withEndAction {
+                    Log.i("KKH", "captureView withEndAction")
+                    captureView.visibility = View.GONE
+                }
+                .start()
+        } ?: onError("ImageCapture is null")
+    }
+
     fun setTorch(torch: CameraTorch): Boolean {
         when(torch) {
             CameraTorch.OFF -> {

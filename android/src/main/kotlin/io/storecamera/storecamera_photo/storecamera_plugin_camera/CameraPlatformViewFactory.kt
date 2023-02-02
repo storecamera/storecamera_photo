@@ -18,6 +18,7 @@ enum class PlatformViewMethod {
   ON_PAUSE,
   ON_RESUME,
   CAPTURE,
+  CAPTURE_BY_RATIO,
   SET_CAMERA_POSITION,
   SET_TORCH,
   SET_FLASH,

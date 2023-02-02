@@ -104,6 +104,19 @@ extension StoreCameraPluginCameraView on StoreCameraPluginCamera {
     return null;
   }
 
+  Future<Uint8List?> captureByRatio(double ratio) async {
+    final result = await _viewChannel.invokeMethod(
+        PlatformViewMethod.CAPTURE_BY_RATIO.method, ratio);
+    if (result is Uint8List) {
+      return result;
+    } else if (result is String) {
+      if (kDebugMode) {
+        print('###### capture result: $result');
+      }
+    }
+    return null;
+  }
+
   Future<CameraPluginDeviceSetting?> setCameraPosition(
       CameraPosition cameraPosition) async {
     final result = await _viewChannel.invokeMethod(
@@ -164,6 +177,7 @@ enum PlatformViewMethod {
   ON_PAUSE,
   ON_RESUME,
   CAPTURE,
+  CAPTURE_BY_RATIO,
   SET_CAMERA_POSITION,
   SET_TORCH,
   SET_FLASH,
@@ -182,6 +196,8 @@ extension PlatformViewMethodExtension on PlatformViewMethod {
         return '${StoreCameraPluginCamera.CHANNEL}/ON_RESUME';
       case PlatformViewMethod.CAPTURE:
         return '${StoreCameraPluginCamera.CHANNEL}/CAPTURE';
+      case PlatformViewMethod.CAPTURE_BY_RATIO:
+        return '${StoreCameraPluginCamera.CHANNEL}/CAPTURE_BY_RATIO';
       case PlatformViewMethod.SET_CAMERA_POSITION:
         return '${StoreCameraPluginCamera.CHANNEL}/SET_CAMERA_POSITION';
       case PlatformViewMethod.SET_TORCH:

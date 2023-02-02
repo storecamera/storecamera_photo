@@ -166,8 +166,10 @@ class _CameraPageState extends State<CameraPage> {
                         elevation: 8,
                         shape: const CircleBorder()),
                     onPressed: () async {
-                      Uint8List? result = await _cameraPlguin?.capture(
-                          CameraRatio.RATIO_3_4, CameraResolution.LOW);
+                      // Uint8List? result = await _cameraPlguin?.capture(
+                      //     CameraRatio.RATIO_3_4, CameraResolution.LOW);
+                      Uint8List? result =
+                          await _cameraPlguin?.captureByRatio(3 / 4);
                       if (result != null) {
                         ui.decodeImageFromList(
                           result,

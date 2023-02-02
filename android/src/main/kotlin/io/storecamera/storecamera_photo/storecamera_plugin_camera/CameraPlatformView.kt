@@ -80,6 +80,24 @@ class CameraPlatformView(
         }
         result.success(null)
       }
+      PlatformViewMethod.CAPTURE_BY_RATIO -> {
+        var clipRatio: Float? = null
+        if(call.arguments is Float?) {
+          clipRatio = call.arguments as Float
+        } else if(call.arguments is Double) {
+          clipRatio = (call.arguments as Double).toFloat()
+        }
+
+        if(clipRatio != null) {
+            view.capture(clipRatio, {
+              result.success(it)
+            }, {
+              result.success(it)
+            })
+            return
+          }
+        result.success(null)
+      }
       PlatformViewMethod.SET_CAMERA_POSITION -> {
         CameraPosition.from(call.arguments as? String)?.let {
           result.success(view.changeCamera(it)?.pluginToMap())

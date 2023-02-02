@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.os.Handler
 import android.os.Looper
+import android.util.Size
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.exifinterface.media.ExifInterface
@@ -273,5 +274,39 @@ class CameraViewCapture(
         val byteArray = outputStream.toByteArray()
         outputStream.close()
         return byteArray
+    }
+
+    // ratio is y over x
+    private fun toMaxByteArrayByRatio(ratio: Double): ByteArray {
+        val bitmapAndOrientation = getOriginalBitmapAndOrientation()
+        val matrix = bitmapAndOrientation.second
+        val sourceWidth = bitmapAndOrientation.first.width
+        val sourceHeight = bitmapAndOrientation.first.height
+        val (clipWidth, clipHeight) = sizeToFitSourceByRatio(ratio, sourceWidth, sourceHeight)
+        val firstPixelInSourceX = (sourceWidth - clipWidth) / 2
+        val firstPixelInSourceY = (sourceHeight - clipHeight) / 2
+
+        val bitmap = Bitmap.createBitmap(bitmapAndOrientation.first,
+            firstPixelInSourceX, firstPixelInSourceY,
+            clipWidth, clipHeight, matrix, true)
+
+        if(bitmap != bitmapAndOrientation.first) {
+            bitmapAndOrientation.first.recycle()
+        }
+
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+        val byteArray = outputStream.toByteArray()
+        outputStream.close()
+        return byteArray
+    }
+
+    private fun sizeToFitSourceByRatio(ratio: Double, originalWidth: Int, originalHeight: Int) : Pair<Int, Int> {
+        val (sourceWidth, sourceHeight) = Pair(originalWidth.toDouble(), originalHeight.toDouble())
+        val sourceSlope = sourceHeight / sourceWidth
+        val(width, height) = if(ratio > sourceSlope) Pair(sourceWidth, sourceWidth / ratio)
+                             else Pair(sourceHeight * ratio, sourceHeight)
+
+        return Pair((width + 0.5).toInt(), (height + 0.5).toInt())
     }
 }
