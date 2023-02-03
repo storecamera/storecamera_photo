@@ -33,6 +33,7 @@ class StoreCameraPluginCameraView: UIView {
     @objc dynamic var videoDeviceInput: AVCaptureDeviceInput!
     private let photoOutput = AVCapturePhotoOutput()
     private var inProgressPhotoCaptureDelegates = [Int64: StoreCameraPluginCaptureProcessor]()
+    private var inProgressPhotoCaptureByRatioDelegates = [Int64: StoreCameraPluginCaptureByRatioProcessor]()
    
     private let videoDeviceDiscoverySession = StoreCameraPluginCameraDeviceDiscoverySession()
 
@@ -197,6 +198,70 @@ class StoreCameraPluginCameraView: UIView {
             )
 
             self.inProgressPhotoCaptureDelegates[photoCaptureProcessor.requestedPhotoSettings.uniqueID] = photoCaptureProcessor
+            self.photoOutput.capturePhoto(with: photoSettings, delegate: photoCaptureProcessor)
+        }
+    }
+    
+    func captureByRatio(ratio: Float, onSuccess: @escaping (Data?) -> Void, onError: @escaping (String) -> Void) {
+        let videoPreviewLayerOrientation = preview.videoPreviewLayer.connection?.videoOrientation
+        updateStatus(status: .CAPTURE) {
+            if !$0 {
+                DispatchQueue.main.async {
+                    onSuccess(nil)
+                }
+                return
+            }
+            
+            if let photoOutputConnection = self.photoOutput.connection(with: .video) {
+                photoOutputConnection.videoOrientation = videoPreviewLayerOrientation!
+            }
+
+            var photoSettings = AVCapturePhotoSettings()
+
+            // Capture HEIF photos when supported. Enable auto-flash and high-resolution photos.
+            if self.photoOutput.availablePhotoCodecTypes.contains(.hevc) {
+                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+            }
+
+            if self.videoDeviceInput.device.position == .back, self.videoDeviceInput.device.isFlashAvailable {
+                if self.videoDeviceInput.device.torchMode == .on {
+                    photoSettings.flashMode = .off
+                } else {
+                    photoSettings.flashMode = self.flash.deviceMode()
+                }
+            }
+
+            photoSettings.isHighResolutionPhotoEnabled = true
+            if !photoSettings.__availablePreviewPhotoPixelFormatTypes.isEmpty {
+                photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: photoSettings.__availablePreviewPhotoPixelFormatTypes.first!]
+            }
+            
+            let photoCaptureProcessor = StoreCameraPluginCaptureByRatioProcessor(
+                ratio: ratio,
+                orientation: UIDevice.current.orientation,
+                with: photoSettings, willCapturePhotoAnimation: {
+                // Flash the screen to signal that AVCam took a photo.
+                DispatchQueue.main.async {
+                    self.preview.videoPreviewLayer.opacity = 0
+                    UIView.animate(withDuration: 0.25) {
+                        self.preview.videoPreviewLayer.opacity = 1
+                    }
+                }
+            }, completionHandler: { photoCaptureProcessor in
+                // When the capture is complete, remove a reference to the photo capture delegate so it can be deallocated.
+                self.sessionQueue.async {
+                    self.inProgressPhotoCaptureByRatioDelegates[photoCaptureProcessor.requestedPhotoSettings.uniqueID] = nil
+                }
+                self.updateStatus(status: .SESSION_START) { (success) in
+
+                }
+                DispatchQueue.main.async {
+                    onSuccess(photoCaptureProcessor.getPhotoData())
+                }
+            }
+            )
+
+            self.inProgressPhotoCaptureByRatioDelegates[photoCaptureProcessor.requestedPhotoSettings.uniqueID] = photoCaptureProcessor
             self.photoOutput.capturePhoto(with: photoSettings, delegate: photoCaptureProcessor)
         }
     }

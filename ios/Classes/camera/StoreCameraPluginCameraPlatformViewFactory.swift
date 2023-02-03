@@ -39,6 +39,7 @@ enum PlatformViewMethod: String {
     case ON_PAUSE = "ON_PAUSE"
     case ON_RESUME = "ON_RESUME"
     case CAPTURE = "CAPTURE"
+    case CAPTURE_BY_RATIO = "CAPTURE_BY_RATIO"
     case SET_CAMERA_POSITION = "SET_CAMERA_POSITION"
     case SET_TORCH = "SET_TORCH"
     case SET_FLASH = "SET_FLASH"

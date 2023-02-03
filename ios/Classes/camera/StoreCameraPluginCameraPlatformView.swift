@@ -78,6 +78,18 @@ public class StoreCameraPluginCameraPlatformView: NSObject, FlutterPlatformView 
                 }
             }            
             result(nil)
+        case .CAPTURE_BY_RATIO:
+            var ratio: Float? = nil
+            if let it = call.arguments as? Double {
+                ratio = Float(it)
+            } else if let it = call.arguments as? Float {
+                ratio = it
+            }
+            if let _ratio = ratio{
+                cameraView.captureByRatio(ratio: _ratio, onSuccess: {data in result(data)}, onError: {error in result(error)})
+                return
+            }
+            result(nil)
         case .SET_CAMERA_POSITION:
             if let position = valueToDevicePosition(call.arguments as? String) {
                 cameraView.changeCamera(position) { setting in

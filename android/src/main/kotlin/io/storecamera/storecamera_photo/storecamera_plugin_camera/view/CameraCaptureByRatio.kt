@@ -88,8 +88,7 @@ class CameraCaptureByRatio(
         val clipRatio : Float = 1 / ratio
         val (sourceBitmap, matrix) = getOriginalBitmapAndOrientation()
 
-        if(sourceBitmap == null) return ByteArray(0)
-        val bitmapAndOrientation = sourceBitmap
+        val bitmapAndOrientation = sourceBitmap ?: return ByteArray(0)
 
         val sourceWidth = bitmapAndOrientation.width
         val sourceHeight = bitmapAndOrientation.height
